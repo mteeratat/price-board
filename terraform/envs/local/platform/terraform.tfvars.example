@@ -1,0 +1,5 @@
+# Copy to terraform.tfvars and set real values. Never commit terraform.tfvars.
+
+db_user     = "priceboard"
+db_password = "changeme"
+db_name     = "prices"
