@@ -1,0 +1,20 @@
+# --- Private notes (never commit) ---
+plan.md
+CLAUDE.md
+
+# --- Terraform ---
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+
+# --- Env / secrets ---
+.env*
+!.env.example
+kubeconfig*
+*.pem
+*.key
+
+# --- OS / editor ---
+.DS_Store
