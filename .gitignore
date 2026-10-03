@@ -1,6 +1,7 @@
 # --- Private notes (never commit) ---
 plan.md
 CLAUDE.md
+phase-*.md
 
 # --- Terraform ---
 .terraform/
