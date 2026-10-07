@@ -14,5 +14,18 @@ services:
       interval: 5s
       retries: 5
 
+  # One-shot: applies migrations, then exits.
+  migrate:
+    image: migrate/migrate:v4.19.0
+    volumes:
+      - ./app/migrations:/migrations:ro
+    command:
+      - -path=/migrations
+      - -database=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      - up
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   pgdata:
