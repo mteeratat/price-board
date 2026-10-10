@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"embed"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -13,6 +16,12 @@ import (
 	"github.com/mteeratat/price-board/app/internal/env"
 	"github.com/mteeratat/price-board/app/internal/store"
 )
+
+//go:embed index.html
+var files embed.FS
+
+// Parsed once at startup: a broken template crashes at boot, not on first request.
+var page = template.Must(template.ParseFS(files, "index.html"))
 
 func main() {
 	// No default: a missing DB secret must fail loudly.
@@ -54,6 +63,21 @@ func main() {
 			return c.String(http.StatusInternalServerError, "internal error")
 		}
 		return c.JSON(http.StatusOK, prices)
+	})
+
+	e.GET("/", func(c *echo.Context) error {
+		prices, err := st.LatestPrices(c.Request().Context())
+		if err != nil {
+			log.Print(err)
+			return c.String(http.StatusInternalServerError, "internal error")
+		}
+		// Render to a buffer first, so a template error never sends half a page.
+		var buf bytes.Buffer
+		if err := page.Execute(&buf, prices); err != nil {
+			log.Print(err)
+			return c.String(http.StatusInternalServerError, "internal error")
+		}
+		return c.HTMLBlob(http.StatusOK, buf.Bytes())
 	})
 
 	sc := echo.StartConfig{Address: ":" + port}
