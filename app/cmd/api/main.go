@@ -47,6 +47,15 @@ func main() {
 		return c.String(http.StatusOK, "ok")
 	})
 
+	e.GET("/prices", func(c *echo.Context) error {
+		prices, err := st.LatestPrices(c.Request().Context())
+		if err != nil {
+			log.Print(err)
+			return c.String(http.StatusInternalServerError, "internal error")
+		}
+		return c.JSON(http.StatusOK, prices)
+	})
+
 	sc := echo.StartConfig{Address: ":" + port}
 	if err := sc.Start(ctx, e); err != nil {
 		log.Fatal(err)

@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -40,4 +41,32 @@ func (s *Store) InsertPrice(ctx context.Context, symbol, price string) error {
 		return fmt.Errorf("store: insert %s: %w", symbol, err)
 	}
 	return nil
+}
+
+type Price struct {
+	Symbol    string    `json:"symbol"`
+	Price     string    `json:"price"`
+	FetchedAt time.Time `json:"fetched_at"`
+}
+
+// LatestPrices returns the newest row per symbol.
+func (s *Store) LatestPrices(ctx context.Context) ([]Price, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT DISTINCT ON (symbol) symbol, price::text, fetched_at
+		FROM prices
+		ORDER BY symbol, fetched_at DESC`)
+	if err != nil {
+		return nil, fmt.Errorf("store: latest prices: %w", err)
+	}
+	defer rows.Close()
+
+	out := []Price{} // empty slice, not nil: JSON gives [] instead of null
+	for rows.Next() {
+		var p Price
+		if err := rows.Scan(&p.Symbol, &p.Price, &p.FetchedAt); err != nil {
+			return nil, fmt.Errorf("store: scan price: %w", err)
+		}
+		out = append(out, p)
+	}
+	return out, rows.Err()
 }
