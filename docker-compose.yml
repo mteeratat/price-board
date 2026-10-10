@@ -27,5 +27,29 @@ services:
       postgres:
         condition: service_healthy
 
+  api:
+    build: ./app
+    image: price-board:dev
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+    ports:
+      - "127.0.0.1:8080:8080" # localhost only
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  # One-shot: fetches once, then exits. Re-run with `docker compose run --rm fetcher`.
+  fetcher:
+    build: ./app
+    image: price-board:dev
+    entrypoint: ["/app/fetcher"]
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      SYMBOLS: ${SYMBOLS}
+      BINANCE_PRICE_URL: ${BINANCE_PRICE_URL}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
 volumes:
   pgdata:
