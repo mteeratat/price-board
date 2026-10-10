@@ -9,6 +9,7 @@ import (
 
 	"github.com/mteeratat/price-board/app/internal/binance"
 	"github.com/mteeratat/price-board/app/internal/retry"
+	"github.com/mteeratat/price-board/app/internal/store"
 )
 
 const (
@@ -22,12 +23,22 @@ func main() {
 	if len(symbols) == 0 {
 		log.Fatal("SYMBOLS is empty")
 	}
+	// No default: a missing DB secret must fail loudly.
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		log.Fatal("DATABASE_URL is not set")
+	}
 
 	client := binance.NewClient(url)
 
 	// Stop before the CronJob's activeDeadlineSeconds (50s) kills the pod.
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
+
+	st, err := store.New(ctx, dbURL)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	failed := false
 	for _, s := range symbols {
@@ -42,8 +53,16 @@ func main() {
 			failed = true
 			continue
 		}
-		log.Printf("%s = %s", p.Symbol, p.Price)
+		if err := st.InsertPrice(ctx, p.Symbol, p.Price); err != nil {
+			log.Print(err)
+			failed = true
+			continue
+		}
+		log.Printf("saved %s = %s", p.Symbol, p.Price)
 	}
+
+	// Close explicitly: os.Exit below skips deferred calls.
+	st.Close()
 
 	// Non-zero exit marks the Job as failed in Kubernetes.
 	if failed {
