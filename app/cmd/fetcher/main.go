@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/mteeratat/price-board/app/internal/binance"
+	"github.com/mteeratat/price-board/app/internal/env"
 	"github.com/mteeratat/price-board/app/internal/retry"
 	"github.com/mteeratat/price-board/app/internal/store"
 )
@@ -18,8 +19,8 @@ const (
 )
 
 func main() {
-	url := getenv("BINANCE_PRICE_URL", defaultPriceURL)
-	symbols := parseSymbols(getenv("SYMBOLS", defaultSymbols))
+	url := env.Get("BINANCE_PRICE_URL", defaultPriceURL)
+	symbols := parseSymbols(env.Get("SYMBOLS", defaultSymbols))
 	if len(symbols) == 0 {
 		log.Fatal("SYMBOLS is empty")
 	}
@@ -68,14 +69,6 @@ func main() {
 	if failed {
 		os.Exit(1)
 	}
-}
-
-// getenv returns the env var, or fallback if it is unset or empty.
-func getenv(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return fallback
 }
 
 // parseSymbols turns "BTCUSDT, ETHUSDT," into ["BTCUSDT", "ETHUSDT"].

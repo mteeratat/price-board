@@ -28,6 +28,11 @@ func (s *Store) Close() {
 	s.pool.Close()
 }
 
+// Ping checks the DB is reachable (used by /readyz).
+func (s *Store) Ping(ctx context.Context) error {
+	return s.pool.Ping(ctx)
+}
+
 // InsertPrice saves one price. fetched_at is set by the DB default (now()).
 func (s *Store) InsertPrice(ctx context.Context, symbol, price string) error {
 	_, err := s.pool.Exec(ctx, "INSERT INTO prices (symbol, price) VALUES ($1, $2)", symbol, price)
