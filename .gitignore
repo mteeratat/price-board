@@ -14,6 +14,7 @@ phase-*.md
 .env*
 !.env.example
 kubeconfig*
+*-config
 *.pem
 *.key
 
